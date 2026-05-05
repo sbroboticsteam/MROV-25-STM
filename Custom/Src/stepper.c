@@ -1,10 +1,7 @@
-#ifndef STEPPER_H
-#define STEPPER_H
+#include "main.h"
+#include "../../Custom/Inc/stepper.h"
+#include <stdio.h>
 
-
-
-
-
-
-
-#endif
+void setStepper(Stepper s, int delay, int dir){
+    // s.
+}

@@ -23,6 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "usbd_cdc_if.h"
 #include "../../Custom/Inc/imu.h"
 #include "../../Custom/Inc/stepper.h"
 /* USER CODE END Includes */
@@ -194,10 +195,8 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
@@ -213,12 +212,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -600,9 +599,9 @@ void USB_Callback(uint8_t* Buf, uint32_t *Len){
   //should probably copy the buffer to a static variable
 
   //quick led flash
-  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_7);
-  osDelay(200);
-  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_7);
+  // HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_7);
+  // osDelay(200);
+  // HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_7);
 
   //only considerring thrusters
   // int vals[8];
@@ -636,11 +635,14 @@ void StartDefaultTask(void *argument)
   MX_USB_DEVICE_Init();
   usb_init_flag = 1;
   /* USER CODE BEGIN 5 */
+
   /* Infinite loop */
   for(;;)
   {
-    HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_7);
-    osDelay(100);
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_RESET);
+    osDelay(1000);
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_SET);
+    osDelay(1000);
   }
   /* USER CODE END 5 */
 }
@@ -657,14 +659,14 @@ void Start_I2C_Telemetry(void *argument)
   /* USER CODE BEGIN Start_I2C_Telemetry */
   /* Infinite loop */
   char msg[] = "Hello USB\r\n";
-  // for(;;)
-  // {    
-
-  // }
-
-  while (usb_init_flag && CDC_Transmit_FS((uint8_t*)msg, strlen(msg))){
-    osDelay(100);
+  for(;;)
+  {    
+    while (!usb_init_flag) osDelay(10); // wait for USB init
+    
+    CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+    osDelay(1000);
   }
+
 
   /* USER CODE END Start_I2C_Telemetry */
 }

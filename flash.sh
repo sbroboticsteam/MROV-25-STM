@@ -14,7 +14,7 @@ if [[ ! -f "$ELF" ]]; then
 fi
 echo "Flashing $ELF ..."
 
-openocd -f interface/stlink.cfg -f target/stm32f3x.cfg \
+openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
     -c "program $ELF verify reset exit"
 
 echo "Flash Succesful !"
