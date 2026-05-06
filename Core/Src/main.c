@@ -68,6 +68,7 @@ const osThreadAttr_t I2C_Telemetry_attributes = {
 /* USER CODE BEGIN PV */
 int esc_arm_flag = 0;
 int usb_init_flag = 0;
+int led_on = 1;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -598,26 +599,24 @@ static void MX_GPIO_Init(void)
 void USB_Callback(uint8_t* Buf, uint32_t *Len){
   //should probably copy the buffer to a static variable
 
-  //quick led flash
-  // HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_7);
-  // osDelay(200);
-  // HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_7);
+  // CDC_Transmit_FS((uint8_t*)&num, 1);
 
   //only considerring thrusters
-  // int vals[8];
-  // memcpy(vals, packet, sizeof(vals));
+  // uint8_t vals[*Len];
+  // memcpy(vals, Buf, *Len);
+  // uint32_t size = *Len;
 
   // int val = vals[0];  // use first value for ESC
 
-  // // clamp for safety
-  // // val = val >> 8;
+  // clamp for safety
+  // val = val >> 8;
   // if (val < 1100) val = 1100;
   // if (val > 1900) val = 1900;
 
   // for (int i = 0; i < ; i++){
   //   __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, vals[i]);
   // }
-  // return val;
+  // return 1;
 }
 
 /* USER CODE END 4 */
@@ -643,6 +642,7 @@ void StartDefaultTask(void *argument)
     osDelay(1000);
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_SET);
     osDelay(1000);
+    // osDelay(1);
   }
   /* USER CODE END 5 */
 }
@@ -663,7 +663,8 @@ void Start_I2C_Telemetry(void *argument)
   {    
     while (!usb_init_flag) osDelay(10); // wait for USB init
     
-    CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+
+    // CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
     osDelay(1000);
   }
 
