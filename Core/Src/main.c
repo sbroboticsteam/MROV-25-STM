@@ -68,7 +68,6 @@ const osThreadAttr_t I2C_Telemetry_attributes = {
 /* USER CODE BEGIN PV */
 int esc_arm_flag = 0;
 int usb_init_flag = 0;
-int led_on = 1;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -601,21 +600,58 @@ void USB_Callback(uint8_t* Buf, uint32_t *Len){
 
   // CDC_Transmit_FS((uint8_t*)&num, 1);
 
+  // assume the buffer is 16 ints
+  // Buffer structure:
+  // FR
+  // FRT
+  // BR
+  // BRT
+  // BL
+  // BLT
+  // FL
+  // FLT
+
+  // SERVO1
+  // SERVO2
+  // SERVO3
+  // SERVO4
+  // SERVO5
+
+  // STEP1
+  // STEP2
+  // STEP3
+
+
   //only considerring thrusters
-  // uint8_t vals[*Len];
-  // memcpy(vals, Buf, *Len);
+  uint8_t vals[*Len];
+  memcpy(vals, Buf, *Len);
   // uint32_t size = *Len;
 
   // int val = vals[0];  // use first value for ESC
-
+  
   // clamp for safety
   // val = val >> 8;
   // if (val < 1100) val = 1100;
   // if (val > 1900) val = 1900;
 
-  // for (int i = 0; i < ; i++){
-  //   __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, vals[i]);
-  // }
+  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[0]);
+  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[1]);
+  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[2]);
+  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[3]);
+  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[4]);
+  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[5]);
+  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[6]);
+  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[7]);
+  int led_on = 1;
+  for (int i = 0; i < 8; i++){
+    if (vals[i] != 1500){
+      led_on = 0;
+    }
+  }
+
+  if (!led_on){
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_SET);
+  }
   // return 1;
 }
 
@@ -638,10 +674,11 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_RESET);
-    osDelay(1000);
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_SET);
-    osDelay(1000);
+    // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_RESET);
+    // osDelay(1000);
+    // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_SET);
+    // osDelay(1000);
+    
     // osDelay(1);
   }
   /* USER CODE END 5 */
