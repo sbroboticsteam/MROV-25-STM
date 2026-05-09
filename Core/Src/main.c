@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
 #include "../../Custom/Inc/imu.h"
+#include "../../Custom/Inc/esc.h"
 #include "../../Custom/Inc/stepper.h"
 /* USER CODE END Includes */
 
@@ -68,6 +69,15 @@ const osThreadAttr_t I2C_Telemetry_attributes = {
 /* USER CODE BEGIN PV */
 int esc_arm_flag = 0;
 int usb_init_flag = 0;
+
+// ESC fr = {htim4, TIM_CHANNEL_1};
+// ESC frt = {htim4, TIM_CHANNEL_2};
+// ESC br = {htim4, TIM_CHANNEL_3};
+// ESC brt = {htim4, TIM_CHANNEL_4};
+// ESC bl = {htim3, TIM_CHANNEL_1};
+// ESC blt = {htim3, TIM_CHANNEL_2};
+// ESC fl = {htim3, TIM_CHANNEL_3};
+// ESC flt = {htim3, TIM_CHANNEL_4};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -634,24 +644,29 @@ void USB_Callback(uint8_t* Buf, uint32_t *Len){
   // if (val < 1100) val = 1100;
   // if (val > 1900) val = 1900;
 
-  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[0]);
-  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[1]);
-  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[2]);
-  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[3]);
-  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[4]);
-  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[5]);
-  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[6]);
-  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[7]);
-  int led_on = 1;
-  for (int i = 0; i < 8; i++){
-    if (vals[i] != 1500){
-      led_on = 0;
-    }
-  }
+  // i = 0;
+  // for (; i < 8; i++){
+  //   setESC()
+  // }
 
-  if (!led_on){
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_SET);
-  }
+  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[0]);
+  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[1]);
+  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[2]);
+  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[3]);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[4]);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[5]);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[6]);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[7]);
+  // int led_on = 1;
+  // for (int i = 0; i < 8; i++){
+  //   if (vals[i] != 1500){
+  //     led_on = 0;
+  //   }
+  // }
+
+  // if (!led_on){
+  //   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_SET);
+  // }
   // return 1;
 }
 
