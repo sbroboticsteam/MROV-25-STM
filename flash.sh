@@ -15,6 +15,7 @@ fi
 echo "Flashing $ELF ..."
 
 openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
+    -c "adapter speed 480" \
     -c "program $ELF verify reset exit"
 
 echo "Flash Succesful !"

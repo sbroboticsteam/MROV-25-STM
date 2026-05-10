@@ -69,6 +69,8 @@ const osThreadAttr_t I2C_Telemetry_attributes = {
 /* USER CODE BEGIN PV */
 int esc_arm_flag = 0;
 int usb_init_flag = 0;
+int motor_armed = 0;
+// int led_on = 1;
 
 // ESC fr = {htim4, TIM_CHANNEL_1};
 // ESC frt = {htim4, TIM_CHANNEL_2};
@@ -78,6 +80,17 @@ int usb_init_flag = 0;
 // ESC blt = {htim3, TIM_CHANNEL_2};
 // ESC fl = {htim3, TIM_CHANNEL_3};
 // ESC flt = {htim3, TIM_CHANNEL_4};
+
+ESC fr;
+ESC frt;
+ESC br;
+ESC brt;
+ESC bl;
+ESC blt;
+ESC fl;
+ESC flt;
+// ESC escs[8] = {fr,frt,br,brt,bl,blt,fl,flt};
+ESC escs[8];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -135,6 +148,59 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+
+  // fr = {htim4, TIM_CHANNEL_1};
+  // frt = {htim4, TIM_CHANNEL_2};
+  // br = {htim4, TIM_CHANNEL_3};
+  // brt = {htim4, TIM_CHANNEL_4};
+  // bl = {htim3, TIM_CHANNEL_1};
+  // blt = {htim3, TIM_CHANNEL_2};
+  // fl = {htim3, TIM_CHANNEL_3};
+  // flt = {htim3, TIM_CHANNEL_4};
+
+  fr.htim = htim4;
+  fr.ch = TIM_CHANNEL_1;
+  escs[0] = fr; 
+  
+  frt.htim = htim4;
+  frt.ch = TIM_CHANNEL_2;
+  escs[1] = frt; 
+
+  br.htim = htim4;
+  br.ch = TIM_CHANNEL_3;
+  escs[2] = br; 
+
+  brt.htim = htim4;
+  brt.ch = TIM_CHANNEL_4;
+  escs[3] = brt; 
+
+  bl.htim = htim3;
+  bl.ch = TIM_CHANNEL_1;
+  escs[4] = bl;
+
+  blt.htim = htim3;
+  blt.ch = TIM_CHANNEL_2;
+  escs[5] = blt;
+
+  fl.htim = htim3;
+  fl.ch = TIM_CHANNEL_3;
+  escs[6] = fl;
+
+  flt.htim = htim3;
+  flt.ch = TIM_CHANNEL_4;
+  escs[7] = flt;
+
+
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
+
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
+
 
   /* USER CODE END 2 */
 
@@ -287,17 +353,13 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;
+  htim1.Init.Prescaler = 71;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 65535;
+  htim1.Init.Period = 19999;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_OC_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -326,8 +388,7 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_TIMING;
-  if (HAL_TIM_OC_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
   }
@@ -368,9 +429,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 84;
+  htim2.Init.Prescaler = 71;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 999;
+  htim2.Init.Period = 19999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
@@ -417,7 +478,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 15;
+  htim3.Init.Prescaler = 71;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 19999;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -478,7 +539,7 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 15;
+  htim4.Init.Prescaler = 71;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 19999;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -631,6 +692,9 @@ void USB_Callback(uint8_t* Buf, uint32_t *Len){
   // STEP2
   // STEP3
 
+  if (!motor_armed){
+    return;
+  }
 
   //only considerring thrusters
   uint8_t vals[*Len];
@@ -644,30 +708,31 @@ void USB_Callback(uint8_t* Buf, uint32_t *Len){
   // if (val < 1100) val = 1100;
   // if (val > 1900) val = 1900;
 
-  // i = 0;
-  // for (; i < 8; i++){
-  //   setESC()
+  int i = 0;
+  for (; i < 8; i++){
+    setESC(escs[i], vals[i]);
+  }
+
+  //set servos
+
+  // for (; i < 11; i++){
+
   // }
 
-  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[0]);
-  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[1]);
-  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[2]);
-  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[3]);
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[4]);
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[5]);
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[6]);
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[7]);
-  // int led_on = 1;
-  // for (int i = 0; i < 8; i++){
-  //   if (vals[i] != 1500){
-  //     led_on = 0;
-  //   }
+  //set steppers
+  // for {; i < 16; i++}{
+
   // }
 
-  // if (!led_on){
-  //   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_SET);
-  // }
-  // return 1;
+  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, vals[0]);
+  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, vals[1]);
+  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, vals[2]);
+  // __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, vals[3]);
+  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, vals[4]);
+  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, vals[5]);
+  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, vals[6]);
+  // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, vals[7]);
+
 }
 
 /* USER CODE END 4 */
@@ -683,7 +748,6 @@ void StartDefaultTask(void *argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
-  usb_init_flag = 1;
   /* USER CODE BEGIN 5 */
 
   /* Infinite loop */
@@ -694,7 +758,12 @@ void StartDefaultTask(void *argument)
     // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, GPIO_PIN_SET);
     // osDelay(1000);
     
-    // osDelay(1);
+    // osDelay(5000);
+    osDelay(1);
+    // if (motor_on){
+    //   __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, 1500);
+    //   motor_on = 0;
+    // }
   }
   /* USER CODE END 5 */
 }
@@ -716,7 +785,7 @@ void Start_I2C_Telemetry(void *argument)
     while (!usb_init_flag) osDelay(10); // wait for USB init
     
 
-    // CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+    CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
     osDelay(1000);
   }
 
