@@ -1,0 +1,36 @@
+CMakeFiles/F303-rtos.dir/Custom/Src/esc.c.obj: \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/Custom/Src/esc.c \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/Custom/Src/../../Custom/Inc/esc.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Core/Inc/main.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Core/Inc/stm32f3xx_hal_conf.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_rcc.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_def.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include/stm32f3xx.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include/stm32f303xe.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/CMSIS/Include/core_cm4.h \
+ /usr/lib/gcc/arm-none-eabi/10.3.1/include/stdint.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/CMSIS/Include/cmsis_version.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/CMSIS/Include/cmsis_compiler.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/CMSIS/Include/cmsis_gcc.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/CMSIS/Include/mpu_armv7.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include/system_stm32f3xx.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h \
+ /usr/lib/gcc/arm-none-eabi/10.3.1/include/stddef.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_rcc_ex.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_gpio.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_gpio_ex.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_exti.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_dma.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_dma_ex.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_cortex.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_flash.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_flash_ex.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_i2c.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_i2c_ex.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_pwr.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_pwr_ex.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_tim.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_tim_ex.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_uart.h \
+ /home/karamat/Projects/STM/NucleoProj/F303-rtos/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_uart_ex.h

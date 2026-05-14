@@ -1,8 +1,8 @@
 #!/bin/bash
-# requires openOCD to flash
-set -e  
+set -e  # stop if any command fails
 
 mkdir -p build
+
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=cmake/gcc-arm-none-eabi.cmake
 
 cmake --build build
