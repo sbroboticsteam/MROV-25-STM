@@ -1,7 +1,0 @@
-/home/karamat/Projects/STM/NucleoProj/F303-rtos/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c:113:7:pvPortMalloc	48	static
-/home/karamat/Projects/STM/NucleoProj/F303-rtos/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c:263:6:vPortFree	32	static
-/home/karamat/Projects/STM/NucleoProj/F303-rtos/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c:311:8:xPortGetFreeHeapSize	4	static
-/home/karamat/Projects/STM/NucleoProj/F303-rtos/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c:317:8:xPortGetMinimumEverFreeHeapSize	4	static
-/home/karamat/Projects/STM/NucleoProj/F303-rtos/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c:323:6:vPortInitialiseBlocks	4	static
-/home/karamat/Projects/STM/NucleoProj/F303-rtos/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c:329:13:prvHeapInit	24	static
-/home/karamat/Projects/STM/NucleoProj/F303-rtos/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c:377:13:prvInsertBlockIntoFreeList	24	static
