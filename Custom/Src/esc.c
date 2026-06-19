@@ -10,5 +10,6 @@ int clampESC(int val){
 }
 
 void setESC(ESC esc, int val){
-    __HAL_TIM_SET_COMPARE(&(esc.htim), esc.ch, clampESC(val));
+    // __HAL_TIM_SET_COMPARE(esc.htim, esc.ch, clampESC(val));
+    __HAL_TIM_SET_COMPARE(&(esc.htim), esc.ch, (val));
 }

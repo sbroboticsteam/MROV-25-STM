@@ -1,0 +1,21 @@
+steps for debugging
+
+terminal 1: openocd
+openocd -f interface/stlink.cfg -f target/stm32f3x.cfg
+
+temrinal 2:gdb /  multiarch
+gdb-multiarch build/F303-rtos.elf
+
+step 3: connect GDB
+target remote localhost:3333
+monitor reset halt
+load
+
+step 4: adding breakpoints
+in gdb terminal, 
+break main.c:[line#]
+
+step 5: watching values
+print [variable]
+
+step 6: continue

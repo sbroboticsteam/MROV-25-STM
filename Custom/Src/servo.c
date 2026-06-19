@@ -10,4 +10,5 @@ int clampVal(int val){
 
 void setServo(Servo servo, int val){
     __HAL_TIM_SET_COMPARE(&(servo.htim), servo.ch, clampVal(val));
+    // __HAL_TIM_SET_COMPARE(&(esc.htim), esc.ch, (val));
 }

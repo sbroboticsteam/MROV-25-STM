@@ -23,14 +23,22 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <string.h>
 #include "../../Custom/Inc/imu.h"
 #include "../../Custom/Inc/esc.h"
 #include "../../Custom/Inc/servo.h"
+#include "../../Custom/Inc/stepper.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef struct __attribute__((packed)) InputPacket {
+  // uint32_t escs[8];
+  // uint32_t servos[5];
+  uint16_t escs[8];
+  uint16_t servos[5];
+  float steppers[3];
+} InputPacket;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -41,7 +49,8 @@
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 // #define RX_PACKET_SIZE 32
-#define RX_PACKET_SIZE (8 * sizeof(int))
+// #define RX_PACKET_SIZE (8 * sizeof(int))
+#define RX_PACKET_SIZE (sizeof(InputPacket))
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -51,6 +60,7 @@ TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim7;
 
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
@@ -84,12 +94,21 @@ ESC blt;
 ESC fl;
 ESC flt;
 ESC escs[8];
+// ESC* escs[8];
 
 Servo prox;
 Servo dist;
 Servo wrist;
 Servo zed;
+Servo ex_servo;
 Servo servos[5];
+// Servo* servos[5];
+
+Stepper base;
+Stepper wristL;
+Stepper wristR;
+Stepper* steppers[3];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,6 +121,7 @@ static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_TIM7_Init(void);
 void StartDefaultTask(void *argument);
 void StartI2C_telemetry(void *argument);
 
@@ -157,6 +177,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
   printf("======= PROGRAM BEGIN =======!\r\n");
@@ -178,15 +199,47 @@ int main(void)
   servos[3] = zed; 
 
   // unused
-  // bl.htim = htim2;
-  // bl.ch = TIM_CHANNEL_1;
-  // escs[4] = bl;
+  ex_servo.htim = htim2;
+  ex_servo.ch = TIM_CHANNEL_1;
+  servos[4] = ex_servo;
 
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);//proximal control
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);//distal control
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);//wrist flexion/extension control
   // HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);//zed camera
   // HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);//unused
+
+  //STEPPERS
+  HAL_TIM_Base_Start_IT(&htim7);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+  
+  initStepper(
+    &base,
+    GPIOC,
+    GPIO_PIN_8,
+    GPIOC,
+    GPIO_PIN_6
+  );
+  steppers[0] = &base;  
+
+
+  initStepper(
+    &wristL,
+    GPIOC,
+    GPIO_PIN_10,
+    GPIOC,
+    GPIO_PIN_12
+  );
+  steppers[1] = &wristL;
+
+  initStepper(
+    &wristR,
+    GPIOC,
+    GPIO_PIN_11,
+    GPIOD,
+    GPIO_PIN_2
+  );
+  steppers[2] = &wristR;
 
   //ESCS + config
   fr.htim = htim4;
@@ -234,15 +287,16 @@ int main(void)
   // DMA
   HAL_UART_Receive_DMA(&huart2, rx_buf, 2 * RX_PACKET_SIZE);
   __HAL_DMA_ENABLE_IT(huart2.hdmarx, DMA_IT_HT);
+  __HAL_DMA_ENABLE_IT(huart2.hdmarx, DMA_IT_TC);
 
   //ESC ARMING
   // __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 1500);
   for (int i = 0; i < 8; i++){
-    setESC(escs[i],1500);
+    setESC(escs[i], 1500);
   }
   HAL_Delay(3000);
   printf("-> Attempted to arm ESC\r\n");
-  motors_armed_flag=1;
+  motors_armed_flag = 1;
 
   /* USER CODE END 2 */
 
@@ -662,6 +716,44 @@ static void MX_TIM4_Init(void)
 }
 
 /**
+  * @brief TIM7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM7_Init(void)
+{
+
+  /* USER CODE BEGIN TIM7_Init 0 */
+
+  /* USER CODE END TIM7_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM7_Init 1 */
+
+  /* USER CODE END TIM7_Init 1 */
+  htim7.Instance = TIM7;
+  htim7.Init.Prescaler = 47;
+  htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim7.Init.Period = 49;
+  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM7_Init 2 */
+
+  /* USER CODE END TIM7_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -732,9 +824,17 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10
+                          |GPIO_PIN_11|GPIO_PIN_12, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -749,37 +849,53 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : PC6 PC8 PC9 PC10
+                           PC11 PC12 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10
+                          |GPIO_PIN_11|GPIO_PIN_12;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PD2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
-//Assuming only thruster values
 int process(uint8_t* packet){
-  // int vals[8];
-  int vals[RX_PACKET_SIZE];
-  memcpy(vals, packet, sizeof(int) * RX_PACKET_SIZE);
-
-  int i = 0;
-  for (; i < 8; i++){
-    // __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, vals[i]);
-    setESC(escs[i], vals[i]);
+  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);  
+  InputPacket packet_cpy;
+  memcpy(&packet_cpy, packet, RX_PACKET_SIZE);
+  
+  for (int i = 0; i < 8; i++){
+    setESC(escs[i], packet_cpy.escs[i]);
+  }
+  
+  for (int i = 0; i < 4; i++){ //there was no 5th servo, causing invalid servo operations
+    setServo(servos[i], packet_cpy.servos[i]);
+  }
+  
+  for (int i = 0; i < 3; i++){
+    setStepperSpeed(steppers[i], packet_cpy.steppers[i]);
   }
 
-  for (; i  < 12; i++){
-    setServo(servos[i-8], vals[i]);
-  }
   return 1;
 }
-
 
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart) {
   if (huart->Instance == USART2) {
     // Packet A is ready in rxBuffer[0 .. PACKET_SIZE-1]
     if (motors_armed_flag){
-      uint val = process(rx_buf);
-      // printf("%d\r\n", val);
+      process(rx_buf);
     }
   }
 }
@@ -788,8 +904,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   if (huart->Instance == USART2) {
     // Packet B is ready in rxBuffer[PACKET_SIZE .. PACKET_SIZE*2-1]
     if (motors_armed_flag){ 
-      uint val = process(rx_buf + RX_PACKET_SIZE);
-      // printf("%d\r\n", val);
+      process(rx_buf + RX_PACKET_SIZE);
     }
   }
 }
@@ -804,12 +919,29 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
+  // setStepperSpeed(&base, 0.2);
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
   {
-    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);    
-    osDelay(200);
+    // HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);   
+    // osDelay(1000);
+    // setStepperSpeed(&base, -0.25);
+    // osDelay(1000);
+    // setStepperSpeed(&base, 0.0);
+    // osDelay(1000);
+    // setStepperSpeed(&base, 0.25);
+    // osDelay(1000);
+    // setStepperSpeed(&base, 0.0);
+
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+    // HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+    // osDelay(200);
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+    // HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+    // osDelay(200);
+
+    osDelay(1);
   }
   /* USER CODE END 5 */
 }
@@ -827,13 +959,13 @@ void StartI2C_telemetry(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    // osDelay(1);
+    osDelay(1);
     // int x = get_gyro_x(&hi2c1);
     // printf("%d\r\n",x);
-    IMU_Packet packet = get_packet(&hi2c1);
-    HAL_UART_Transmit(&huart2, (uint8_t *)&packet, sizeof(IMU_Packet), HAL_MAX_DELAY);
+    // IMU_Packet packet = get_packet(&hi2c1);
+    // HAL_UART_Transmit(&huart2, (uint8_t *)&packet, sizeof(IMU_Packet), HAL_MAX_DELAY);
     // printf("test");
-    osDelay(500);
+    // osDelay(500);
   }
   /* USER CODE END StartI2C_telemetry */
 }
@@ -857,6 +989,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
   /* USER CODE BEGIN Callback 1 */
 
+  if (htim->Instance == TIM7 && motors_armed_flag){
+    // printf("test\r\n");
+
+    //there are 3 servos. this is bad practice. I should use a macro or a variable
+    for (int i = 0; i < 3; i++){ 
+      // incrementCounter(&steppers[i]);
+      accumulate(steppers[i]);
+    }
+  }
   /* USER CODE END Callback 1 */
 }
 

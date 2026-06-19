@@ -48,7 +48,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ./Custom/Src/esc.c
     ./Custom/Src/imu.c
     ./Custom/Src/servo.c
-#     ./Custom/Src/stepper.c
+    ./Custom/Src/stepper.c
 #     ./Custom/Src/uart_parse.c
 )
 
