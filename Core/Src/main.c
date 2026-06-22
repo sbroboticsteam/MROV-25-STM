@@ -28,6 +28,10 @@
 #include "../../Custom/Inc/esc.h"
 #include "../../Custom/Inc/servo.h"
 #include "../../Custom/Inc/stepper.h"
+#include "../../Custom/Inc/encoder.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,6 +43,11 @@ typedef struct __attribute__((packed)) InputPacket {
   uint16_t servos[5];
   float steppers[3];
 } InputPacket;
+
+typedef struct __attribute__((packed)) OutputPacket {
+  char fused;
+  IMU_Data imu_packet;
+}
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -109,6 +118,10 @@ Stepper wristL;
 Stepper wristR;
 Stepper* steppers[3];
 
+Encoder e1;
+Encoder e2;
+Encoder e3;
+Encoder* encoders[3];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -131,6 +144,26 @@ void StartI2C_telemetry(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+uint32_t DWT_Init(void)
+{
+  /* Enable TRC */
+  CoreDebug->DEMCR |=  CoreDebug_DEMCR_TRCENA_Msk; // 0x01000000;
+  /* Reset the clock cycle counter value */
+  DWT->CYCCNT = 0;
+  /* Enable  clock cycle counter */
+  DWT->CTRL |=  DWT_CTRL_CYCCNTENA_Msk; //0x00000001;
+
+  return (DWT->CYCCNT == 0);
+}
+
+__STATIC_INLINE void us_delay(volatile uint32_t us)
+{
+  uint32_t cycles_per_us = HAL_RCC_GetHCLKFreq() / 1000000;
+  uint32_t start = DWT->CYCCNT;
+  uint32_t delay_cycles = us * cycles_per_us;
+  while ((DWT->CYCCNT - start) < delay_cycles);
+}
 
 int __io_putchar(int ch)
 {
@@ -181,6 +214,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   printf("======= PROGRAM BEGIN =======!\r\n");
+  DWT_Init();
   //Servos + config
   prox.htim = htim1;
   prox.ch = TIM_CHANNEL_1;
@@ -222,7 +256,6 @@ int main(void)
   );
   steppers[0] = &base;  
 
-
   initStepper(
     &wristL,
     GPIOC,
@@ -240,6 +273,15 @@ int main(void)
     GPIO_PIN_2
   );
   steppers[2] = &wristR;
+
+  //ENCODERS
+  initEncoder(&e1, GPIOB, GPIO_PIN_14);
+  encoders[0] = &e1;
+  initEncoder(&e2, GPIOB, GPIO_PIN_13);
+  encoders[1] = &e2;
+  initEncoder(&e3, GPIOB, GPIO_PIN_5);
+  encoders[2] = &e3;
+  
 
   //ESCS + config
   fr.htim = htim4;
@@ -830,6 +872,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10
                           |GPIO_PIN_11|GPIO_PIN_12, GPIO_PIN_RESET);
 
@@ -848,6 +893,21 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB10 PB13 PB14 PB4
+                           PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_4
+                          |GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PC6 PC8 PC9 PC10
                            PC11 PC12 */
@@ -919,29 +979,52 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
-  // setStepperSpeed(&base, 0.2);
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
+  uint16_t raw1 = 0;
+  uint16_t raw2 = 0;
+  uint16_t raw3 = 0;
+
   for(;;)
   {
-    // HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);   
-    // osDelay(1000);
-    // setStepperSpeed(&base, -0.25);
-    // osDelay(1000);
-    // setStepperSpeed(&base, 0.0);
-    // osDelay(1000);
-    // setStepperSpeed(&base, 0.25);
-    // osDelay(1000);
-    // setStepperSpeed(&base, 0.0);
+    // osDelay(1);
 
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-    // HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-    // osDelay(200);
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-    // HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-    // osDelay(200);
+    raw1 = 0;
+    raw2 = 0;
+    raw3 = 0;
+    
+    taskENTER_CRITICAL();
+    //set the clock low
+    GPIOB->BSRR = (GPIO_PIN_15 << 16);
+    us_delay(2);
 
-    osDelay(1);
+    for (int i = 0; i < 14; i++){
+      GPIOB->BSRR = GPIO_PIN_15;
+      us_delay(4);
+      raw1 = (raw1 << 1) | HAL_GPIO_ReadPin(e1.data_port, e1.data_pin);
+      raw2 = (raw2 << 1) | HAL_GPIO_ReadPin(e2.data_port, e2.data_pin);
+      raw3 = (raw3 << 1) | HAL_GPIO_ReadPin(e3.data_port, e3.data_pin);
+
+      GPIOB->BSRR = GPIO_PIN_15 << 16;
+      us_delay(2);
+      //set the clock high
+    }
+    taskEXIT_CRITICAL();
+    e1.pos = raw1 & 0x03FF;        // example: 10-bit position
+    e2.pos = raw2 & 0x03FF;
+    e3.pos = raw3 & 0x03FF;
+
+    e1.turn = (raw1 >> 10) & 0x0F; // example: 4-bit turn
+    e2.turn = (raw2 >> 10) & 0x0F;
+    e3.turn = (raw3 >> 10) & 0x0F; 
+    us_delay(20); // doesnt have to be 20us, can be MUCH slower if I want
+    // osDelay(300);
+    GPIOB->BSRR = GPIO_PIN_15;
+    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);    
+    // printf("encoder turn: %d\r\n", e1.turn);
+    // printf("encoder pos:%d\r\n", e1.pos);
+    // HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);    
+
   }
   /* USER CODE END 5 */
 }

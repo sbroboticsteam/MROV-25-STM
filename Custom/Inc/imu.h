@@ -21,7 +21,7 @@ typedef struct Mag{
     float mag_z;
 } Mag;
 
-typedef struct IMU_Packet{
+typedef struct IMU_Raw{
     float gyro_x;
     float gyro_y;
     float gyro_z;
@@ -33,9 +33,9 @@ typedef struct IMU_Packet{
     float mag_x;
     float mag_y;
     float mag_z;
-} IMU_Packet;
+} IMU_Raw;
 
-typedef struct IMU_Packet_Fused{
+typedef struct IMU_Fused{
     float euler_heading;
     float euler_roll;
     float euler_pitch;
@@ -45,7 +45,12 @@ typedef struct IMU_Packet_Fused{
     float quat_x;
     float quat_y;
     float quat_z;
-} IMU_Packet_Fused;
+} IMU_Fused;
+
+typedef union IMU_Data{
+    IMU_Raw raw;
+    IMU_Fused fused;
+}
 
 
 int imu_read_nb(uint8_t * buffer, uint16_t n, uint8_t addr, I2C_HandleTypeDef* hi2c);
@@ -98,8 +103,8 @@ float get_quat_y(I2C_HandleTypeDef* hi2c);
 float get_quat_z(I2C_HandleTypeDef* hi2c);
 
 // PACKETS
-IMU_Packet get_packet(I2C_HandleTypeDef* hi2c);
-IMU_Packet_Fused get_packet_fused(I2C_HandleTypeDef* hi2c);
+IMU_Raw get_packet(I2C_HandleTypeDef* hi2c);
+IMU_Fused get_packet_fused(I2C_HandleTypeDef* hi2c);
 
 
 #endif
