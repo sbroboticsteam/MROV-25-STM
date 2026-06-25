@@ -50,6 +50,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ./Custom/Src/servo.c
     ./Custom/Src/stepper.c
     ./Custom/Src/encoder.c
+
 #     ./Custom/Src/uart_parse.c
 )
 

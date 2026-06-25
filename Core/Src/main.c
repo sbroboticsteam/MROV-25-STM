@@ -44,10 +44,21 @@ typedef struct __attribute__((packed)) InputPacket {
   float steppers[3];
 } InputPacket;
 
-typedef struct __attribute__((packed)) OutputPacket {
-  char fused;
-  IMU_Data imu_packet;
-}
+typedef struct __attribute__((packed)) TXHeader{
+  uint8_t start;
+  uint8_t type;
+  uint16_t len;
+} TXHeader;
+// typedef struct __attribute__((packed)) SensorPayload {
+//   char fused;
+//   IMU_Data imu_packet;
+//   Enccoder_Data encoder_packet[3];
+// }
+
+typedef struct __attribute__((packed)) SensorPayload {
+  Encoder_Data encoder_packet[NUM_ENCODERS];
+} SensorPayload;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -60,6 +71,8 @@ typedef struct __attribute__((packed)) OutputPacket {
 // #define RX_PACKET_SIZE 32
 // #define RX_PACKET_SIZE (8 * sizeof(int))
 #define RX_PACKET_SIZE (sizeof(InputPacket))
+#define TX_HEADER_SIZE (sizeof(TXHeader))
+#define TX_START 0x67
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -165,6 +178,25 @@ __STATIC_INLINE void us_delay(volatile uint32_t us)
   while ((DWT->CYCCNT - start) < delay_cycles);
 }
 
+void printd(char * msg){
+  int len = strlen(msg);
+  uint8_t tx_buf[TX_HEADER_SIZE + len];
+  TXHeader header = {TX_START, 0x01, len};
+  memcpy(tx_buf, &header, sizeof(TXHeader));
+  memcpy(tx_buf + sizeof(TXHeader), msg, strlen(msg));
+
+  HAL_UART_Transmit(&huart2, (uint8_t *)tx_buf, sizeof(tx_buf), HAL_MAX_DELAY);
+}
+
+// void watchf(float * value, uint16_t len){
+//   TXHeader header = {TX_START, 0x02, len};
+//   uint8_t tx_buf[TX_HEADER_SIZE + len];
+//   memcpy(tx_buf, &header, sizeof(TXHeader));
+//   memcpy(tx_buf + sizeof(TXHeader), value, len);
+
+//   HAL_UART_Transmit(&huart2, (uint8_t *)tx_buf, sizeof(tx_buf), HAL_MAX_DELAY);
+// }
+
 int __io_putchar(int ch)
 {
   HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
@@ -213,7 +245,7 @@ int main(void)
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
-  printf("======= PROGRAM BEGIN =======!\r\n");
+  printd("======= PROGRAM BEGIN =======!\r\n");
   DWT_Init();
   //Servos + config
   prox.htim = htim1;
@@ -337,7 +369,7 @@ int main(void)
     setESC(escs[i], 1500);
   }
   HAL_Delay(3000);
-  printf("-> Attempted to arm ESC\r\n");
+  printd("-> Attempted to arm ESC\r\n");
   motors_armed_flag = 1;
 
   /* USER CODE END 2 */
@@ -981,17 +1013,25 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
-  uint16_t raw1 = 0;
-  uint16_t raw2 = 0;
-  uint16_t raw3 = 0;
+  uint16_t raws[NUM_ENCODERS] = {0};
+  float prev_angles[NUM_ENCODERS] = {0};
+  int16_t prev_turns[NUM_ENCODERS] = {0};
+
+  for (int i = 0; i < NUM_ENCODERS; i++){
+    prev_angles[i] = getAngle(encoders[i]);
+    prev_turns[i] = encoders[i]->turn;
+  }
 
   for(;;)
   {
-    // osDelay(1);
-
-    raw1 = 0;
-    raw2 = 0;
-    raw3 = 0;
+    // printd("heartbeat\r\n");
+    // osDelay(500);
+    // continue;
+    
+    //temp variables
+    for (int i = 0; i < NUM_ENCODERS; i++){
+      raws[i] = 0;
+    }
     
     taskENTER_CRITICAL();
     //set the clock low
@@ -1000,30 +1040,66 @@ void StartDefaultTask(void *argument)
 
     for (int i = 0; i < 14; i++){
       GPIOB->BSRR = GPIO_PIN_15;
-      us_delay(4);
-      raw1 = (raw1 << 1) | HAL_GPIO_ReadPin(e1.data_port, e1.data_pin);
-      raw2 = (raw2 << 1) | HAL_GPIO_ReadPin(e2.data_port, e2.data_pin);
-      raw3 = (raw3 << 1) | HAL_GPIO_ReadPin(e3.data_port, e3.data_pin);
+      us_delay(2);
+      for (int j = 0; j < NUM_ENCODERS; j++){
+        raws[j] = (raws[j] << 1) | HAL_GPIO_ReadPin(encoders[j]->data_port, encoders[j]->data_pin);
+      }
 
       GPIOB->BSRR = GPIO_PIN_15 << 16;
       us_delay(2);
       //set the clock high
     }
     taskEXIT_CRITICAL();
-    e1.pos = raw1 & 0x03FF;        // example: 10-bit position
-    e2.pos = raw2 & 0x03FF;
-    e3.pos = raw3 & 0x03FF;
 
-    e1.turn = (raw1 >> 10) & 0x0F; // example: 4-bit turn
-    e2.turn = (raw2 >> 10) & 0x0F;
-    e3.turn = (raw3 >> 10) & 0x0F; 
-    us_delay(20); // doesnt have to be 20us, can be MUCH slower if I want
+    //set new turn and position
+    for (int i = 0; i < NUM_ENCODERS; i ++){
+      encoders[i]->pos = raws[i] & 0x03FF;
+      encoders[i]->turn = (raws[i] >> 10) & 0x0F;
+    }
+
+    //BUG: unconnected GPIO seem to be high, leading to false positions and turns
+
+    //velocity calculation
+    
+    Encoder_Data encoder_output[NUM_ENCODERS];
+    float velocities[NUM_ENCODERS] = {0};
+    for (int i = 0; i < NUM_ENCODERS; i++){
+      float current_angle = getAngle(encoders[i]);
+      int16_t turn_diff = (int16_t)encoders[i]->turn - prev_turns[i];
+      //TODO: overflow protection
+      // watchf(&turn_diff);
+
+      float angle_diff = current_angle - prev_angles[i];
+
+      velocities[i] = (360 * turn_diff + angle_diff) / (CLK_FRAME_US * 0.000001);
+      // velocities[i] = (360 * turn_diff + angle_diff) / (300 * 0.001);
+
+      encoder_output[i].angle = current_angle;
+      encoder_output[i].velocity = velocities[i];
+
+      prev_angles[i] = current_angle;
+      prev_turns[i] = encoders[i]->turn; 
+    }
+
+    // delay and keep clock low
+    // doesnt have to be 20us, can be MUCH slower if I want
+    us_delay(CLK_FRAME_US); 
     // osDelay(300);
-    GPIOB->BSRR = GPIO_PIN_15;
-    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);    
-    // printf("encoder turn: %d\r\n", e1.turn);
-    // printf("encoder pos:%d\r\n", e1.pos);
-    // HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);    
+
+    GPIOB->BSRR = GPIO_PIN_15; // clock high, restart state machine
+    //transmit encoder data
+    // print()
+    TXHeader header = {TX_START, 0x00, sizeof(SensorPayload)};
+    uint8_t tx_buf[TX_HEADER_SIZE + sizeof(SensorPayload)] = {0};
+    SensorPayload output;
+    memcpy(output.encoder_packet, encoder_output, sizeof(output.encoder_packet)); //payload copied
+
+    memcpy(tx_buf, &header, sizeof(TXHeader));
+    memcpy(tx_buf + sizeof(TXHeader), &output, sizeof(output));
+
+    // printd()
+    // HAL_UART_Transmit(&huart2, (uint8_t *)&output, NUM_ENCODERS * sizeof(Encoder_Data), HAL_MAX_DELAY); 
+    HAL_UART_Transmit(&huart2, (uint8_t *)tx_buf, sizeof(tx_buf), HAL_MAX_DELAY); 
 
   }
   /* USER CODE END 5 */
@@ -1077,7 +1153,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     //there are 3 servos. this is bad practice. I should use a macro or a variable
     for (int i = 0; i < 3; i++){ 
-      // incrementCounter(&steppers[i]);
       accumulate(steppers[i]);
     }
   }

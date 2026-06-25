@@ -50,7 +50,7 @@ typedef struct IMU_Fused{
 typedef union IMU_Data{
     IMU_Raw raw;
     IMU_Fused fused;
-}
+} IMU_Data;
 
 
 int imu_read_nb(uint8_t * buffer, uint16_t n, uint8_t addr, I2C_HandleTypeDef* hi2c);

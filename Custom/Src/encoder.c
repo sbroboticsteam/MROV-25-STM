@@ -12,4 +12,7 @@ void initEncoder(Encoder *encoder,
         encoder->data_port = data_port;
         encoder->data_pin = data_pin;
     }
-// float getAngle(){}
+
+float getAngle(Encoder *encoder){
+    return (float)encoder->pos * 360.0 / 1024.0; 
+}  

@@ -207,8 +207,8 @@ float get_quat_z(I2C_HandleTypeDef* hi2c){
 }
 
 // FUSED PACKET
-IMU_Packet get_packet(I2C_HandleTypeDef* hi2c){
-  IMU_Packet out = {
+IMU_Raw get_packet(I2C_HandleTypeDef* hi2c){
+  IMU_Raw out = {
     get_gyro_x(hi2c),
     get_gyro_y(hi2c),
     get_gyro_z(hi2c),
@@ -222,8 +222,8 @@ IMU_Packet get_packet(I2C_HandleTypeDef* hi2c){
   return out;
 }
 
-IMU_Packet_Fused get_packet_fused(I2C_HandleTypeDef* hi2c){
-  IMU_Packet_Fused out = {
+IMU_Fused get_packet_fused(I2C_HandleTypeDef* hi2c){
+  IMU_Fused out = {
     get_euler_heading(hi2c),
     get_euler_roll(hi2c),
     get_euler_pitch(hi2c),
